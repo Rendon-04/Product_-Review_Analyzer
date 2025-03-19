@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+Flask-SQLAlchemy
+psycopg2-binary
+requests
+beautifulsoup4
+spacy
+textblob
+python-dotenv

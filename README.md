@@ -1,6 +1,8 @@
 # 📊 Product Review Analyzer
 
 **Product Review Analyzer** is a full-stack web application that scrapes product reviews from Amazon, performs sentiment analysis, and identifies key themes using AI.
+<img width="1728" alt="Screenshot 2025-03-19 at 4 00 57 PM" src="https://github.com/user-attachments/assets/6cf6e6c2-2974-439e-b7f8-70c9fd2d4184" />
+<img width="1728" alt="Screenshot 2025-03-19 at 4 01 27 PM" src="https://github.com/user-attachments/assets/a74693f0-5524-4d08-8640-0656cb6d99b7" />
 
 ## 🚀 Features
 

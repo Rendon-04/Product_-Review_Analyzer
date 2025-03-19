@@ -71,6 +71,5 @@
 ---
 
 **👨‍💻 Built by Ivan Rendon**  
-*Making AI-powered insights accessible for product analysis*  
 
 

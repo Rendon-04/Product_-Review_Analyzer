@@ -15,7 +15,9 @@ function ReviewList({ reviews }) {
               <p className={`text-sm ${getSentimentColor(review.sentiment)}`}>
                 Sentiment: {review.sentiment?.toFixed(2)}
               </p>
-              <p className="text-sm text-gray-600">Themes: {review.themes?.join(", ")}</p>
+              <p className="text-sm text-gray-600">
+                Themes: {(Array.isArray(review.themes) ? review.themes : []).join(", ")}
+              </p>
             </li>
           ))}
         </ul>
@@ -24,4 +26,5 @@ function ReviewList({ reviews }) {
   }
   
   export default ReviewList
-  
+
+

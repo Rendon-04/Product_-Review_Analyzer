@@ -1,7 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import time
-import random
+
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -9,22 +8,26 @@ HEADERS = {
 }
 
 def scrape_reviews(product_id, url):
-    from app import db, Review  
+    from app import db, Review
+
+    print(f"✅ Scraping {url} for product {product_id}...")
+
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    reviews = soup.find_all('div', {'data-hook': 'review'})
+    reviews = soup.find_all('span', {'data-hook': 'review-body'})
 
-    print(f"✅ Found {len(reviews)} reviews")  # Debugging log
+    if not reviews:
+        print("❌ No reviews found! Check Amazon page structure.")
+        return
 
     for review in reviews:
-        text_element = review.find('span', {'data-hook': 'review-body'})
+        review_text = review.text.strip()
+        print(f"📝 Scraped Review: {review_text}") 
 
-        if text_element:
-            text = text_element.text.strip()
-            print(f"💾 Saving Review: {text[:50]}...")  # Debugging log
-            new_review = Review(product_id=product_id, text=text)
-            db.session.add(new_review)
+        new_review = Review(product_id=product_id, text=review_text)
+        db.session.add(new_review)
 
     db.session.commit()
-    print("✅ Reviews saved in the database!")
+    print(f"✅ Successfully saved {len(reviews)} reviews to database")
+

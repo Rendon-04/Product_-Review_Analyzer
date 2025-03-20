@@ -1,17 +1,17 @@
-import os
 import openai
+import os
 from sqlalchemy import or_
 from app import db, Review  
 from dotenv import load_dotenv
+from openai import OpenAI
 
-# Load OpenAI API Key
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key) 
 
 def analyze_reviews():
     print("✅ Inside analyze_reviews()") 
 
-    # Fetch reviews that haven't been analyzed yet
     reviews = db.session.query(Review).filter(or_(Review.sentiment == None, Review.sentiment.is_(None))).all()
 
     print(f"✅ Found {len(reviews)} unprocessed reviews")  
@@ -23,22 +23,19 @@ def analyze_reviews():
     for review in reviews:
         print(f"🔎 Analyzing Review {review.id}: {review.text[:50]}...")  
 
-        # ✅ Send Review to OpenAI API for Sentiment & Theme Extraction
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an AI that performs sentiment analysis and extracts key themes from product reviews."},
-                {"role": "user", "content": f"Analyze this review: '{review.text}'. Return the sentiment score (-1 to 1) and a list of key themes."}
+                {"role": "system", "content": "You analyze product reviews for sentiment (-1 to 1) and extract key themes."},
+                {"role": "user", "content": f"Analyze this review: '{review.text}'. Return a JSON object with 'sentiment' and 'themes'."}
             ]
         )
 
-        # ✅ Parse OpenAI API Response
-        analysis = response["choices"][0]["message"]["content"]
-        print(f"🔍 AI Response: {analysis}")  # Debugging
+        analysis = response.choices[0].message.content
+        print(f"🔍 AI Response: {analysis}")  
 
-        # ✅ Extract sentiment and themes from response
         try:
-            analysis_data = eval(analysis)  # Convert string response to dictionary
+            analysis_data = eval(analysis) 
             review.sentiment = analysis_data.get("sentiment", 0)
             review.themes = analysis_data.get("themes", ["General"])
         except Exception as e:
@@ -48,5 +45,3 @@ def analyze_reviews():
 
     db.session.commit()
     print("✅ Review analysis completed and saved to DB")
-
-

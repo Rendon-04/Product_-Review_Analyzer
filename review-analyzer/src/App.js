@@ -1,63 +1,57 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import axios from "axios"
-import FilterBar from "./components/FilterBar"
-import SearchBar from "./components/SearchBar"
-import ReviewList from "./components/ReviewList"
-import ThemeChart from "./components/ThemeChart"
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import FilterBar from "./components/FilterBar";
+import SearchBar from "./components/SearchBar";
+import ReviewList from "./components/ReviewList";
+import ThemeChart from "./components/ThemeChart";
 
 function App() {
-  const [reviews, setReviews] = useState([])
-  const [filteredReviews, setFilteredReviews] = useState([])
-  const [themes, setThemes] = useState([])
-  const [productId, setProductId] = useState("")
-  const [url, setUrl] = useState("")
-  const [sentimentFilter, setSentimentFilter] = useState("all")
-  const [themeFilter, setThemeFilter] = useState("all")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [reviews, setReviews] = useState([]);
+  const [filteredReviews, setFilteredReviews] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [productId, setProductId] = useState("");
+  const [url, setUrl] = useState("");
+  const [sentimentFilter, setSentimentFilter] = useState("all");
+  const [themeFilter, setThemeFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetchReviews()
-    fetchThemes()
-  }, [])
-
-  useEffect(() => {
-    filterReviews()
-  }, [reviews, sentimentFilter, themeFilter, searchTerm])
-
-  const fetchReviews = async () => {
-    const response = await axios.get("http://localhost:6061/api/reviews")
-    setReviews(response.data)
-  }
-
-  const fetchThemes = async () => {
-    const response = await axios.get("http://localhost:6061/api/themes")
-    setThemes(response.data)
-  }
-
-  const handleScrape = async () => {
-    await axios.post("http://localhost:6061/api/scrape", { product_id: productId, url })
-    fetchReviews()
-  }
-
-  const handleAnalyze = async () => {
-    try {
-      await axios.post("http://localhost:6061/api/analyze", {}, {
-        headers: {
-          "Content-Type": "application/json"
-        },
-        withCredentials: false
-      });
-      console.log("Analysis completed");
-    } catch (error) {
-      console.error("Error analyzing reviews:", error);
+  const fetchReviews = useCallback(async () => {
+    if (!productId) {
+      console.warn("⚠️ No product ID selected. Reviews will not be fetched.");
+      return;
     }
-  };
+  
+    try {
+      const response = await axios.get(`http://localhost:6061/api/reviews?product_id=${productId}`, {
+        headers: { "Cache-Control": "no-cache" },
+      });
+  
+      console.log(`✅ API Response for Product ${productId}:`, response.data);
+      setReviews(response.data);
+    } catch (error) {
+      console.error("❌ Error fetching reviews:", error);
+    }
+  }, [productId]); 
   
 
-  const filterReviews = () => {
-    let filtered = reviews
+  const fetchThemes = useCallback(async () => {
+    try {
+      const response = await axios.get("http://localhost:6061/api/themes", {
+        headers: { "Cache-Control": "no-cache" },
+      });
+      console.log("✅ Themes Updated:", response.data);
+      setThemes(response.data);
+    } catch (error) {
+      console.error("❌ Error fetching themes:", error);
+    }
+  }, []);
+
+  const filterReviews = useCallback(() => {
+    let filtered = reviews;
+
+    console.log("🚀 Debugging themes:", reviews.map((r) => ({ id: r.id, themes: r.themes })));
 
     if (sentimentFilter !== "all") {
       filtered = filtered.filter((review) => {
@@ -66,18 +60,66 @@ function App() {
         return review.sentiment >= -0.2 && review.sentiment <= 0.2;
       });
     }
-    
 
     if (themeFilter !== "all") {
-      filtered = filtered.filter((review) => review.themes?.includes(themeFilter))
+      filtered = filtered.filter(
+        (review) => Array.isArray(review.themes) && review.themes.includes(themeFilter)
+      );
     }
 
     if (searchTerm) {
-      filtered = filtered.filter((review) => review.text.toLowerCase().includes(searchTerm.toLowerCase()))
+      filtered = filtered.filter((review) =>
+        review.text.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
-    setFilteredReviews(filtered)
-  }
+    setFilteredReviews(filtered);
+  }, [reviews, sentimentFilter, themeFilter, searchTerm]);
+
+  useEffect(() => {
+    fetchReviews();
+    fetchThemes();
+  }, [fetchReviews, fetchThemes]); 
+
+  useEffect(() => {
+    filterReviews();
+  }, [filterReviews]); 
+
+  const handleScrape = async () => {
+    if (!productId || !url) {
+      console.warn("⚠️ Please enter a Product ID and URL before scraping.");
+      return;
+    }
+  
+    try {
+      await axios.post("http://localhost:6061/api/scrape", { product_id: productId, url });
+      console.log(`✅ Scraping completed for Product ${productId}`);
+  
+      setTimeout(fetchReviews, 1500); 
+    } catch (error) {
+      console.error("❌ Error scraping reviews:", error);
+    }
+  };
+  
+
+  const handleAnalyze = async () => {
+    if (!productId) {
+      console.warn("⚠️ Please enter a Product ID before analyzing.");
+      return;
+    }
+  
+    try {
+      await axios.post("http://localhost:6061/api/analyze", {}, {
+        headers: { "Content-Type": "application/json" },
+      });
+      console.log(`✅ Analysis completed for Product ${productId}`);
+  
+      setTimeout(fetchReviews, 1500); 
+    } catch (error) {
+      console.error("❌ Error analyzing reviews:", error);
+    }
+  };
+  
 
   return (
     <div className="container mx-auto p-4">
@@ -116,8 +158,7 @@ function App() {
 
       <ReviewList reviews={filteredReviews} />
     </div>
-  )
+  );
 }
 
-export default App
-
+export default App;
